@@ -4,7 +4,7 @@
 
 // LED Configuration
 #define NUM_LEDS 27
-#define LED_PIN 10  // Changed from 5 to avoid conflict with arch_left servo  // Check if this matches your actual LED data pin
+#define LED_PIN 5
 CRGB leds[NUM_LEDS];
 
 // Servo Configuration
@@ -26,7 +26,7 @@ void setup() {
   Serial.begin(9600);
   
   // Initialize servos
-  arch_left.attach(5);  // Original pin from EPS_demonstrator.cpp
+  arch_left.attach(5);
   arch_right.attach(6);
   
   // Set initial position
@@ -34,7 +34,7 @@ void setup() {
   arch_right.write(180 - currentAngle); // Mirror movement
   
   // Initialize LEDs
-  FastLED.addLeds<WS2812B, LED_PIN, GRB>(leds, NUM_LEDS);  // Most WS2812B strips use GRB color order, not RGB
+  FastLED.addLeds<WS2812B, LED_PIN, RGB>(leds, NUM_LEDS);
   clearLEDs();
   updateLED();
   
@@ -91,18 +91,16 @@ void clearLEDs() {
 void updateLED() {
   // Light up current LED and adjacent ones
   if (currentLedIndex > 0) {
-    leds[currentLedIndex - 1] = CRGB(0, 0, 255);  // Bright blue
+    leds[currentLedIndex - 1] = CRGB::Blue;
   }
   
-  leds[currentLedIndex] = CRGB(255, 255, 255);  // Bright white
+  leds[currentLedIndex] = CRGB::White;
   
   if (currentLedIndex < NUM_LEDS - 1) {
-    leds[currentLedIndex + 1] = CRGB(0, 0, 255);  // Bright blue
+    leds[currentLedIndex + 1] = CRGB::Blue;
   }
   
   FastLED.show();
-  Serial.print("LED updated at index: ");
-  Serial.println(currentLedIndex);
 }
 
 void updateDisplay() {
