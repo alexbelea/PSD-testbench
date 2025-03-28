@@ -8,8 +8,19 @@ CRGB leds[NUM_LEDS];
 // Communication pin from main Arduino
 const int led_status_pin = 12;  // Input pin to receive signals
 
+// Preset LED Positions Configuration
+// MODIFY THESE VALUES TO CHANGE PRESET LED POSITIONS
+const int NUM_PRESETS = 5;
+int presetLedPositions[NUM_PRESETS] = {
+  3,    // Position 1 - center LED index
+  9,    // Position 2 - center LED index
+  13,   // Position 3 - center LED index (middle)
+  17,   // Position 4 - center LED index
+  23    // Position 5 - center LED index
+};
+
 // State variables
-int currentLedIndex = 0;
+int currentPresetIndex = 2;  // Start at center position (index 2, which is the 3rd preset)
 bool lastSignalState = LOW;
 
 void setup() {
@@ -27,21 +38,24 @@ void setup() {
   clearAllLeds();
   
   // Show initial LED position
-  updateLedDisplay(currentLedIndex);
+  updateLedDisplay(presetLedPositions[currentPresetIndex]);
 }
 
 void loop() {
   // Read signal from main Arduino
   bool signalState = digitalRead(led_status_pin);
-  // for debug print signal change from Uno
+  
+  // For debug print signal change from Uno
   if (signalState != lastSignalState) {
     Serial.print("Signal changed from ");
     Serial.print(lastSignalState ? "HIGH" : "LOW");
     Serial.print(" to ");
     Serial.println(signalState ? "HIGH" : "LOW");
   }
-  // quick delay to ensure still high
+  
+  // Quick delay to ensure signal is still high
   delay(5);
+  
   // Detect rising edge (LOW to HIGH transition)
   if (signalState == HIGH && lastSignalState == LOW) {
     Serial.println("Signal received from main Arduino");
@@ -49,14 +63,11 @@ void loop() {
     // Clear previous LEDs
     clearAllLeds();
     
-    // Increment LED position
-    currentLedIndex += 3;  // Move by 3 LEDs for more visible change
-    if (currentLedIndex >= NUM_LEDS) {
-      currentLedIndex = 0;  // Reset when we reach the end
-    }
+    // Move to next preset
+    currentPresetIndex = (currentPresetIndex + 1) % NUM_PRESETS;
     
     // Update LED display
-    updateLedDisplay(currentLedIndex);
+    updateLedDisplay(presetLedPositions[currentPresetIndex]);
     
     // Small delay to avoid multiple triggers
     delay(5);
@@ -76,16 +87,19 @@ void clearAllLeds() {
 void updateLedDisplay(int centerIndex) {
   // Create a 3-LED pattern with center being white and sides being blue
   if (centerIndex > 0) {
-    leds[centerIndex - 1] = CRGB::Blue;
+    leds[centerIndex - 1] = CRGB::White;
   }
   
   leds[centerIndex] = CRGB::White;
   
   if (centerIndex < NUM_LEDS - 1) {
-    leds[centerIndex + 1] = CRGB::Blue;
+    leds[centerIndex + 1] = CRGB::White;
   }
   
   FastLED.show();
-  Serial.print("LED updated at index: ");
-  Serial.println(centerIndex);
+  Serial.print("LED updated at preset index: ");
+  Serial.print(currentPresetIndex + 1);  // Display 1-5 instead of 0-4
+  Serial.print(" (LED position: ");
+  Serial.print(centerIndex);
+  Serial.println(")");
 }

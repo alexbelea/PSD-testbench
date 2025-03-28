@@ -12,9 +12,19 @@ LiquidCrystal_I2C lcd(0x27, 16, 2);
 const int pushButton = 13;
 const int led_status_pin = 12;  // Signal to secondary Arduino for LED control
 
+// Preset Positions Configuration
+// MODIFY THESE VALUES TO CHANGE PRESET POSITIONS
+const int NUM_PRESETS = 5;
+int presetAngles[NUM_PRESETS] = {
+  20,   // Position 1 - angle in degrees
+  50,   // Position 2 - angle in degrees
+  90,   // Position 3 - angle in degrees (center)
+  130,  // Position 4 - angle in degrees
+  160   // Position 5 - angle in degrees
+};
+
 // State Variables
-int currentAngle = 90;       // Start at center position
-int currentLedIndex = 13;    // Start at middle LED (for display purposes only)
+int currentPresetIndex = 2;  // Start at center position (index 2, which is the 3rd preset)
 bool lastButtonState = HIGH; // Using INPUT_PULLUP, so HIGH is not pressed
 
 void setup() {
@@ -25,8 +35,7 @@ void setup() {
   arch_right.attach(6);
   
   // Set initial position
-  arch_left.write(currentAngle);
-  arch_right.write(180 - currentAngle); // Mirror movement
+  moveToPreset(currentPresetIndex);
   
   // Initialize LED communication pin
   pinMode(led_status_pin, OUTPUT);
@@ -47,22 +56,16 @@ void loop() {
   
   // Check for button press (transition from HIGH to LOW)
   if (buttonState == LOW && lastButtonState == HIGH) {
-    // Move arch 10 degrees
-    currentAngle += 10;
+    // Move to next preset
+    currentPresetIndex = (currentPresetIndex + 1) % NUM_PRESETS;
     
-    // Reset to 0 if we go past 180
-    if (currentAngle > 180) {
-      currentAngle = 0;
-    }
-    
-    // Update servos
-    arch_left.write(currentAngle);
-    arch_right.write(180 - currentAngle); // Mirror movement
+    // Update servo position
+    moveToPreset(currentPresetIndex);
     
     // Update display
     updateDisplay();
     
-    // Signal the LED Arduino to move LEDs
+    // Signal the LED Arduino to change LEDs
     signalLedArduino();
     
     // Debounce delay
@@ -71,6 +74,27 @@ void loop() {
   
   // Save button state for next iteration
   lastButtonState = buttonState;
+}
+
+void moveToPreset(int presetIndex) {
+  // do a calibration each time to ensure correct position
+  arch_left.write(0);
+  arch_right.write(180); // Mirror movement (180 - 0)
+  
+  // Wait for servos to reach zero position
+  delay(5000);  // Adjust delay as needed for your servos
+
+  int angle = presetAngles[presetIndex];
+  
+  // Update servos
+  arch_left.write(angle);
+  arch_right.write(180 - angle); // Mirror movement
+  
+  Serial.print("Moving to preset ");
+  Serial.print(presetIndex + 1);
+  Serial.print(" (angle: ");
+  Serial.print(angle);
+  Serial.println(" degrees)");
 }
 
 void signalLedArduino() {
@@ -85,14 +109,18 @@ void signalLedArduino() {
 void updateDisplay() {
   lcd.clear();
   lcd.setCursor(0, 0);
-  lcd.print("Angle: ");
-  lcd.print(currentAngle);
-  lcd.print(" deg");
+  lcd.print("Position: ");
+  lcd.print(currentPresetIndex + 1);  // Display 1-5 instead of 0-4
   
-  // Calculate LED position for display purposes
-  currentLedIndex = map(currentAngle, 0, 180, 0, 26);
+  // Calculate altitude (angle from horizontal)
+  int altitude = presetAngles[currentPresetIndex];
+  // Azimuth is implied by the position around the arch
+  // For display purposes, we'll map angle 0-180 to azimuth 0-180
+  int azimuth = presetAngles[currentPresetIndex];
   
   lcd.setCursor(0, 1);
-  lcd.print("LED: ");
-  lcd.print(currentLedIndex);
+  lcd.print("Alt:");
+  lcd.print(altitude);
+  lcd.print(" Az:");
+  lcd.print(azimuth);
 }
