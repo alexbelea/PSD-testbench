@@ -40,6 +40,8 @@ void loop() {
     Serial.print(" to ");
     Serial.println(signalState ? "HIGH" : "LOW");
   }
+  // quick delay to ensure still high
+  delay(5);
   // Detect rising edge (LOW to HIGH transition)
   if (signalState == HIGH && lastSignalState == LOW) {
     Serial.println("Signal received from main Arduino");
@@ -57,7 +59,7 @@ void loop() {
     updateLedDisplay(currentLedIndex);
     
     // Small delay to avoid multiple triggers
-    delay(50);
+    delay(5);
   }
   
   // Save current state for next comparison
