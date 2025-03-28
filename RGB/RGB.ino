@@ -21,7 +21,7 @@ void setup() {
   FastLED.setBrightness(150);  // Moderate brightness (0-255)
   
   // Initialize communication pin
-  pinMode(led_status_pin, INPUT_PULLUP);
+  pinMode(led_status_pin, INPUT);
   
   // Clear all LEDs
   clearAllLeds();
@@ -33,7 +33,13 @@ void setup() {
 void loop() {
   // Read signal from main Arduino
   bool signalState = digitalRead(led_status_pin);
-  
+  // for debug print signal change from Uno
+  if (signalState != lastSignalState) {
+    Serial.print("Signal changed from ");
+    Serial.print(lastSignalState ? "HIGH" : "LOW");
+    Serial.print(" to ");
+    Serial.println(signalState ? "HIGH" : "LOW");
+  }
   // Detect rising edge (LOW to HIGH transition)
   if (signalState == HIGH && lastSignalState == LOW) {
     Serial.println("Signal received from main Arduino");
