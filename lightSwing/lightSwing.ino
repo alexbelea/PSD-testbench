@@ -1,25 +1,20 @@
 #include <Servo.h>
-#include <FastLED.h>
 #include <LiquidCrystal_I2C.h>
-
-// LED Configuration
-#define NUM_LEDS 27
-#define LED_PIN 5
-CRGB leds[NUM_LEDS];
 
 // Servo Configuration
 Servo arch_left;
 Servo arch_right;
 
-// LCD Configuration (optional)
+// LCD Configuration
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
 // Pin Definitions
 const int pushButton = 13;
+const int led_status_pin = 12;  // Signal to secondary Arduino for LED control
 
 // State Variables
 int currentAngle = 90;       // Start at center position
-int currentLedIndex = 13;    // Start at middle LED
+int currentLedIndex = 13;    // Start at middle LED (for display purposes only)
 bool lastButtonState = HIGH; // Using INPUT_PULLUP, so HIGH is not pressed
 
 void setup() {
@@ -33,10 +28,9 @@ void setup() {
   arch_left.write(currentAngle);
   arch_right.write(180 - currentAngle); // Mirror movement
   
-  // Initialize LEDs
-  FastLED.addLeds<WS2812B, LED_PIN, RGB>(leds, NUM_LEDS);
-  clearLEDs();
-  updateLED();
+  // Initialize LED communication pin
+  pinMode(led_status_pin, OUTPUT);
+  digitalWrite(led_status_pin, LOW);
   
   // Initialize LCD
   lcd.init();
@@ -65,13 +59,11 @@ void loop() {
     arch_left.write(currentAngle);
     arch_right.write(180 - currentAngle); // Mirror movement
     
-    // Update LED position
-    clearLEDs();
-    currentLedIndex = map(currentAngle, 0, 180, 0, NUM_LEDS - 1);
-    updateLED();
-    
     // Update display
     updateDisplay();
+    
+    // Signal the LED Arduino to move LEDs
+    signalLedArduino();
     
     // Debounce delay
     delay(200);
@@ -81,26 +73,13 @@ void loop() {
   lastButtonState = buttonState;
 }
 
-void clearLEDs() {
-  for (int i = 0; i < NUM_LEDS; i++) {
-    leds[i] = CRGB::Black;
-  }
-  FastLED.show();
-}
-
-void updateLED() {
-  // Light up current LED and adjacent ones
-  if (currentLedIndex > 0) {
-    leds[currentLedIndex - 1] = CRGB::Blue;
-  }
+void signalLedArduino() {
+  // Trigger the secondary Arduino's LED animation sequence
+  digitalWrite(led_status_pin, HIGH);
+  delay(50);  // Brief pulse to trigger the other Arduino
+  digitalWrite(led_status_pin, LOW);
   
-  leds[currentLedIndex] = CRGB::White;
-  
-  if (currentLedIndex < NUM_LEDS - 1) {
-    leds[currentLedIndex + 1] = CRGB::Blue;
-  }
-  
-  FastLED.show();
+  Serial.println("Sent signal to LED Arduino");
 }
 
 void updateDisplay() {
@@ -109,4 +88,11 @@ void updateDisplay() {
   lcd.print("Angle: ");
   lcd.print(currentAngle);
   lcd.print(" deg");
+  
+  // Calculate LED position for display purposes
+  currentLedIndex = map(currentAngle, 0, 180, 0, 26);
+  
+  lcd.setCursor(0, 1);
+  lcd.print("LED: ");
+  lcd.print(currentLedIndex);
 }
