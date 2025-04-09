@@ -26,19 +26,29 @@ bool lastSignalState = LOW;
 void setup() {
   Serial.begin(9600);
   Serial.println("LED Controller Starting...");
-  
+ 
   // Initialize LED strip
   FastLED.addLeds<WS2812B, LED_PIN, GRB>(leds, NUM_LEDS);
   FastLED.setBrightness(150);  // Moderate brightness (0-255)
-  
+ 
   // Initialize communication pin
   pinMode(led_status_pin, INPUT);
-  
+ 
   // Clear all LEDs
   clearAllLeds();
   
+  // Explicitly set starting position
+  currentPresetIndex = 2;  // Middle position (index 2, which is preset 3)
+  
+  // Add a small delay for stability
+  delay(50);
+ 
   // Show initial LED position
   updateLedDisplay(presetLedPositions[currentPresetIndex]);
+  
+  // Debug output
+  Serial.print("Starting with preset index: ");
+  Serial.println(currentPresetIndex);
 }
 
 void loop() {
